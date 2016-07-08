@@ -156,6 +156,7 @@ def interpolate(x, y, z, interp_type='linear', hres=50000,
         2) "natural_neighbor", "barnes", or "cressman" from Metpy.mapping .
         Default "linear".
     hres: float
+        The horizontal resolution of the generated grid. Default 50000 meters.
     buffer: float
         How many meters to add to the bounds of the grid. Default 1000 meters.
     minimum_neighbors: int
@@ -201,6 +202,7 @@ def interpolate(x, y, z, interp_type='linear', hres=50000,
 
     elif interp_type in ["cressman", "barnes"]:
 
+        search_radius_m = search_radius
 
         ave_spacing = np.mean((cdist(list(zip(x, y)), list(zip(x, y)))))
 
