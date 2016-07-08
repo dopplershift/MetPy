@@ -54,7 +54,7 @@ def test_remove_nan_observations():
     x = np.array([8, 67, 79, 10, 52, 53, 98, 34, 15, 58])
     y = np.array([24, 87, 48, 94, 98, 66, 14, 24, 60, 16])
 
-    z = np.array([np.nan, np.nan, None, 1, 1, 1, 1, 1, 1, 1])
+    z = np.array([np.nan, np.nan, np.nan, 1, 1, 1, 1, 1, 1, 1])
 
     x_, y_, z_ = remove_nan_observations(x, y, z)
 
