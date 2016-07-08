@@ -125,8 +125,10 @@ def remove_repeat_coordinates(x, y, z):
             coords.append((x_, y_))
             variable.append(t_)
 
-    x_ = np.array(list(coords))[:, 0]
-    y_ = np.array(list(coords))[:, 1]
+    coords = np.array(coords)
+
+    x_ = coords[:, 0]
+    y_ = coords[:, 1]
 
     z_ = np.array(variable)
 
