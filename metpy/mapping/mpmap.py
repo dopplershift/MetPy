@@ -76,16 +76,22 @@ class StationMap(MetpyMap):
 
         opts = copy.deepcopy(options)
 
+        if 'radar_fill' in opts:
+            radar_fill = opts.pop('radar_fill')
+
+        if 'satellite_fill' in opts:
+            satellite_fill = opts.pop('satellite_fill')
+
         MetpyMap.__init__(self, opts)
 
         self.optional_params.append('radar_fill')
         self.optional_params.append('satellite_fill')
 
-        if 'radar_fill' in opts:
-            self.params['radar_fill'] = opts['radar_fill']
+        if satellite_fill is not None:
+            self.params['satellite_fill'] = satellite_fill
 
-        if 'satellite_fill' in opts:
-            self.params['satellite_fill'] = opts['satellite_fill']
+        if radar_fill is not None:
+            self.params['radar_fill'] = satellite_fill
 
 
 class SoundingMap(StationMap):
