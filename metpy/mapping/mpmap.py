@@ -85,7 +85,7 @@ class StationMap(MetpyMap):
             self.params['radar_fill'] = opts['radar_fill']
 
         if 'satellite_fill' in opts:
-            self.params['radar_fill'] = opts['radar_fill']
+            self.params['satellite_fill'] = opts['satellite_fill']
 
 
 class SoundingMap(StationMap):
