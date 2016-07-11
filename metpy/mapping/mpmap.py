@@ -27,23 +27,26 @@ class MetpyMap(object):
 
             warnings.warn(message)
 
-        self.available_params = ["title", "data_file", "data_type", "process_area",
-                                 "map_params", "variable_to_plot", "datetime",
-                                 "projection_options"]
+        self.optional_params = ["title", "process_area", "map_params", "datetime",
+                                "projection_options"]
 
         self.required_params = ["data_file", "data_type", "variable_to_plot"]
 
         self.params = dict()
 
         for key, item in options.items():
-            if key in self.available_params:
+            if key in self.optional_params or key in self.required_params:
                 self.params[key] = options[key]
             else:
                 raise ValueError("Unrecognized parameter: " + str(key))
 
     def add(self, parameters, values):
+
         for key, val in list(zip(parameters, values)):
-            self.params[key] = val
+            if key in self.optional_params or key in self.required_params:
+                self.params[key] = val
+            else:
+                raise ValueError("Unrecognized parameter: " + str(key))
 
     def remove(self, parameters):
 
@@ -58,8 +61,13 @@ class MetpyMap(object):
                 warnings.warn(message)
 
     def update(self, parameters, values):
+
         for key, val in list(zip(parameters, values)):
-            self.params[key] = val
+            if key in self.params:
+                self.params[key] = val
+            else:
+                message = str(key) + " was not found in parameters list."
+                warnings.warn(message)
 
 
 class StationMap(MetpyMap):
@@ -69,6 +77,9 @@ class StationMap(MetpyMap):
         opts = copy.deepcopy(options)
 
         MetpyMap.__init__(self, opts)
+
+        self.optional_params.append('radar_fill')
+        self.optional_params.append('satellite_fill')
 
         if 'radar_fill' in opts:
             self.params['radar_fill'] = opts['radar_fill']
@@ -86,8 +97,6 @@ class SoundingMap(StationMap):
         if 'vertical_levels' not in opts:
             raise ValueError("Must specify vertical level(s) to plot")
 
-        self.required_params.append('vertical_levels')
-
         vertical_levels = opts.pop('vertical_levels')
         coord_type = None
 
@@ -95,6 +104,9 @@ class SoundingMap(StationMap):
             coord_type = opts.pop('vertical_coord_type')
 
         StationMap.__init__(self, opts)
+
+        self.required_params.append('vertical_levels')
+        self.optional_params.append('vertical_coord_type')
 
         self.params['vertical_levels'] = vertical_levels
 
@@ -121,6 +133,8 @@ class GridMap(MetpyMap):
 
         self.required_params.append('analysis_parameters')
         self.required_params.append('horizontal_resolution')
+
+        self.optional_params.append('grid')
 
         self.params['analysis_parameters'] = analy_params
         self.params['horizontal_resolution'] = horiz_resolution
