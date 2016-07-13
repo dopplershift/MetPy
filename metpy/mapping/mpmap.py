@@ -5,6 +5,11 @@
 import warnings
 import copy
 
+import cartopy
+
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 class MetpyMap(object):
 
@@ -69,12 +74,48 @@ class MetpyMap(object):
                 message = str(key) + " was not found in parameters list."
                 warnings.warn(message)
 
+    def draw_map(self, view):
+
+        bbox = self.params['map_params']['bbox']
+
+        view.set_extent([bbox['west'], bbox['east'], bbox['south'], bbox['north']])
+
+        features = self.params['map_params']['features']
+
+        if "states" in features:
+            features.remove("states")
+            view.add_feature(cartopy.feature.NaturalEarthFeature(
+                category='cultural',
+                name='admin_1_states_provinces_lakes',
+                scale='50m',
+                facecolor='none'))
+        if "ocean" in features:
+            features.remove("ocean")
+            view.add_feature(cartopy.feature.OCEAN)
+        if "coastlines" in features:
+            features.remove("coastlines")
+            view.add_feature(cartopy.feature.COASTLINE)
+        if "countries" in features:
+            features.remove("countries")
+            view.add_feature(cartopy.feature.BORDERS, linestyle=':')
+
+        if len(features) > 0:
+            message = "Did not recognize the following features: "
+            for f in features:
+                message += str(f) + " "
+            warnings.warn(message)
+
+        return view
+
 
 class StationMap(MetpyMap):
 
     def __init__(self, options):
 
         opts = copy.deepcopy(options)
+
+        satellite_fill = None
+        radar_fill = None
 
         if 'radar_fill' in opts:
             radar_fill = opts.pop('radar_fill')
@@ -92,6 +133,22 @@ class StationMap(MetpyMap):
 
         if radar_fill is not None:
             self.params['radar_fill'] = satellite_fill
+
+    def draw_map(self, view):
+
+        to_proj = self.params['projection_options']['to_proj']
+        from_proj = self.params['projection_options']['from_proj']
+
+        view = MetpyMap.draw_map(self, view)
+
+        x = np.random.randint(-120, -70, 100)
+        y = np.random.randint(20, 50, 100)
+
+        pts = to_proj.transform_points(from_proj, x, y)
+
+        view.plot(pts[:, 0], pts[:, 1], ".")
+
+        return view
 
 
 class SoundingMap(StationMap):
