@@ -10,6 +10,11 @@ import cartopy
 import numpy as np
 import matplotlib.pyplot as plt
 
+from metpy.cbook import get_test_data
+from metpy.plots import StationPlot
+from metpy.calc import get_wind_components
+from metpy.units import units
+
 
 class MetpyMap(object):
 
@@ -18,10 +23,6 @@ class MetpyMap(object):
         if 'data_file' not in options:
 
             raise ValueError("You must specify 'data_file'")
-
-        if 'variable_to_plot' not in options:
-
-            raise ValueError("You must specify 'variable_to_plot'")
 
         if 'data_type' not in options:
 
@@ -35,7 +36,7 @@ class MetpyMap(object):
         self.optional_params = ["title", "process_area", "map_params", "datetime",
                                 "projection_options"]
 
-        self.required_params = ["data_file", "data_type", "variable_to_plot"]
+        self.required_params = ["data_file", "data_type"]
 
         self.params = dict()
 
@@ -134,19 +135,54 @@ class StationMap(MetpyMap):
         if radar_fill is not None:
             self.params['radar_fill'] = satellite_fill
 
+        if self.params['data_type'] == 'txt':
+            self.data = self.load_text()
+
+    def load_text(self):
+
+        f = get_test_data(self.params['data_file'])
+
+        all_data = np.loadtxt(f, skiprows=1, delimiter=',',
+                              usecols=(1, 2, 3, 4, 5, 6, 7, 17, 18, 19),
+                              dtype=np.dtype([('stid', '3S'), ('lat', 'f'), ('lon', 'f'),
+                                              ('slp', 'f'), ('air_temperature', 'f'),
+                                              ('cloud_fraction', 'f'), ('dewpoint', 'f'),
+                                              ('weather', '16S'),
+                                              ('wind_dir', 'f'), ('wind_speed', 'f')]))
+
+        all_stids = [s.decode('ascii') for s in all_data['stid']]
+
+        whitelist = ['OKC', 'ICT', 'GLD', 'MEM', 'BOS', 'MIA', 'MOB', 'ABQ', 'PHX', 'TTF',
+                     'ORD', 'BIL', 'BIS', 'CPR', 'LAX', 'ATL', 'MSP', 'SLC', 'DFW', 'NYC', 'PHL',
+                     'PIT', 'IND', 'OLY', 'SYR', 'LEX', 'CHS', 'TLH', 'HOU', 'GJT', 'LBB', 'LSV',
+                     'GRB', 'CLT', 'LNK', 'DSM', 'BOI', 'FSD', 'RAP', 'RIC', 'JAN', 'HSV', 'CRW',
+                     'SAT', 'BUY', '0CO', 'ZPC', 'VIH']
+
+        # Loop over all the whitelisted sites, grab the first data, and concatenate them
+        return np.concatenate([all_data[all_stids.index(site)].reshape(1, ) for site in whitelist])
+
     def draw_map(self, view):
 
-        to_proj = self.params['projection_options']['to_proj']
         from_proj = self.params['projection_options']['from_proj']
 
         view = MetpyMap.draw_map(self, view)
 
-        x = np.random.randint(-120, -70, 100)
-        y = np.random.randint(20, 50, 100)
+        x = self.data['lon']
+        y = self.data['lat']
 
-        pts = to_proj.transform_points(from_proj, x, y)
+        u, v = get_wind_components((self.data['wind_speed'] * units('m/s')).to('knots'),
+                                    self.data['wind_dir'] * units.degree)
 
-        view.plot(pts[:, 0], pts[:, 1], ".")
+        stationplot = StationPlot(view, x, y, transform=from_proj,
+                                  fontsize=12)
+
+        stationplot.plot_parameter('NW', self.data['air_temperature'], color='red')
+        stationplot.plot_parameter('SW', self.data['dewpoint'], color='darkgreen')
+
+        stationplot.plot_parameter('NE', self.data['slp'],
+                                   formatter=lambda v: format(10 * v, '.0f')[-3:])
+
+        stationplot.plot_barb(u, v)
 
         return view
 
