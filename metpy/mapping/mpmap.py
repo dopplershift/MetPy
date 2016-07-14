@@ -15,21 +15,27 @@ from metpy.plots import StationPlot
 from metpy.calc import get_wind_components
 from metpy.units import units
 
+from siphon.catalog import TDSCatalog
+from siphon.ncss import NCSS
+from datetime import datetime
 
 class MetpyMap(object):
 
     def __init__(self, options):
 
-        if 'data_file' not in options:
-
-            raise ValueError("You must specify 'data_file'")
+        if 'data_location' not in options:
+            raise ValueError("You must specify 'data_location'")
 
         if 'data_type' not in options:
 
-            data_type = options['data_file'].split('.')[-1]
-            options['data_type'] = data_type
-            message = ("data_type not specified, will assume " + str(data_type) +
-                       " based on filename.")
+            if "http" in options['data_location']:
+                options['data_type'] = "web"
+
+            else:
+                data_type = options['data_location'].split('.')[-1]
+                options['data_type'] = data_type
+                message = ("data_type not specified, will assume " + str(data_type) +
+                           " based on filename.")
 
             warnings.warn(message)
 
@@ -180,7 +186,7 @@ class StationMap(MetpyMap):
         stationplot.plot_parameter('SW', self.data['dewpoint'], color='darkgreen')
 
         stationplot.plot_parameter('NE', self.data['slp'],
-                                   formatter=lambda v: format(10 * v, '.0f')[-3:])
+                                   formatter=lambda sp: format(10 * sp, '.0f')[-3:])
 
         stationplot.plot_barb(u, v)
 
@@ -219,25 +225,44 @@ class GridMap(MetpyMap):
 
         opts = copy.deepcopy(options)
 
-        if 'analysis_parameters' not in options:
-            raise ValueError("Must specify analysis options.")
-
-        if 'horizontal_resolution' not in options:
-            raise ValueError("Must specify horizontal resolution.")
-
-        analy_params = opts.pop('analysis_parameters')
-        horiz_resolution = opts.pop('horizontal_resolution')
-
         MetpyMap.__init__(self, opts)
 
-        self.required_params.append('analysis_parameters')
-        self.required_params.append('horizontal_resolution')
+        self.lons, self.lats,  self.field = self.load_data()
 
-        self.optional_params.append('grid')
+    def load_data(self):
 
-        self.params['analysis_parameters'] = analy_params
-        self.params['horizontal_resolution'] = horiz_resolution
+        gefs = TDSCatalog("http://thredds.ucar.edu/thredds/catalog/grib/NCEP/GEFS/Global_1p0deg_Ensemble"
+                          "/members/catalog.html?dataset=grib/NCEP/GEFS/Global_1p0deg_Ensemble/members/Best")
 
-        if 'grid' in opts:
+        best_ds = list(gefs.datasets.values())[0]
+        ncss = NCSS(best_ds.access_urls['NetcdfSubset'])
 
-            self.params['grid'] = opts['grid']
+        query = ncss.query()
+
+        bbox = self.params['bbox']
+        query.lonlat_box(north=bbox['north'], south=bbox['south'], east=bbox['east'], west=bbox['west']).time(
+            datetime.utcnow())
+        query.accept('netcdf4')
+        query.variables(self.params['variable'])
+
+        data = ncss.get_data(query)
+        print(list(data.variables))
+
+        data = data.variables[self.params['variable']]
+
+        # Time variables can be renamed in GRIB collections. Best to just pull it out of the
+        # coordinates attribute on temperature
+        time_name = temp_var.coordinates.split()[1]
+
+        time_var = data.variables[time_name]
+        lats = data.variables['lat']
+        lons = data.variables['lon']
+
+        return lons, lats, data
+
+    def draw_map(self, view):
+
+        view = MetpyMap.draw_map(self, view)
+
+        if 'variable' not in self.options:
+            raise ValueError("Must specify variable name.")

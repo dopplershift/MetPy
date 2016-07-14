@@ -12,7 +12,7 @@ from numpy.testing import assert_array_almost_equal
 
 def test_add():
 
-    options = {"data_file": "C:/Documents/Stuff.txt",
+    options = {"data_location": "C:/Documents/Stuff.txt",
                "data_type": "txt",
                "variable_to_plot": "air_temperature"}
 
@@ -20,7 +20,7 @@ def test_add():
 
     gmap.add(["a", "b"], [1, 2])
 
-    truth_keys = np.array(["a", "b", "data_file", "data_type", "variable_to_plot"])
+    truth_keys = np.array(["a", "b", "data_location", "data_type", "variable_to_plot"])
 
     truth_values = np.array([1, 2, "C:/Documents/Stuff.txt", "txt", "air_temperature"])
 
@@ -33,7 +33,7 @@ def test_add():
 
 def test_remove():
 
-    options = {"data_file": "C:/Documents/Stuff.txt",
+    options = {"data_location": "C:/Documents/Stuff.txt",
                "data_type": "txt",
                "variable_to_plot": "air_temperature",
                "datetime": datetime.now()}
@@ -42,7 +42,7 @@ def test_remove():
 
     gmap.remove(["datetime"])
 
-    truth_keys = np.array(["data_file", "data_type", "variable_to_plot"])
+    truth_keys = np.array(["data_location", "data_type", "variable_to_plot"])
 
     truth_values = np.array(["C:/Documents/Stuff.txt", "txt", "air_temperature"])
 
@@ -55,7 +55,7 @@ def test_remove():
 
 def test_update():
 
-    options = {"data_file": "C:/Documents/Stuff.txt",
+    options = {"data_location": "C:/Documents/Stuff.txt",
                "data_type": "txt",
                "variable_to_plot": "air_temperature"}
 
@@ -63,7 +63,7 @@ def test_update():
 
     gmap.update(["data_file"], ["C:/Documents/different_stuff.txt"])
 
-    truth_keys = np.array(["data_file", "data_type", "variable_to_plot"])
+    truth_keys = np.array(["data_location", "data_type", "variable_to_plot"])
 
     truth_values = np.array(["C:/Documents/different_stuff.txt", "txt", "air_temperature"])
 
