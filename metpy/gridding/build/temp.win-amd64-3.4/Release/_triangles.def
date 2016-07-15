@@ -1,0 +1,3 @@
+LIBRARY _triangles.pyd
+EXPORTS
+PyInit__triangles

@@ -9,6 +9,8 @@ import math
 from scipy.spatial import cKDTree
 from ..package_tools import Exporter
 
+from metpy.gridding import _triangles
+
 exporter = Exporter(globals())
 
 
