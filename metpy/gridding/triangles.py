@@ -6,6 +6,8 @@ from __future__ import division
 
 import math
 
+import numpy as np
+
 from scipy.spatial import cKDTree
 from ..package_tools import Exporter
 
@@ -13,6 +15,16 @@ from metpy.gridding import _triangles
 
 exporter = Exporter(globals())
 
+@exporter.export
+def triangle_area(pt1, pt2, pt3):
+
+    a = 0.0
+
+    a += pt1[0] * pt2[1] - pt2[0] * pt1[1]
+    a += pt2[0] * pt3[1] - pt3[0] * pt2[1]
+    a += pt3[0] * pt1[1] - pt1[0] * pt3[1]
+
+    return abs(a) / 2
 
 @exporter.export
 def dist_2(x0, y0, x1, y1):
@@ -102,12 +114,14 @@ def circumcircle_radius_2(pt0, pt1, pt2):
     b = distance(pt1, pt2)
     c = distance(pt2, pt0)
 
-    s = (a + b + c) * 0.5
+    t_area = triangle_area(pt0, pt1, pt2)
 
-    prod = s * (s - a) * (s - b) * (s - c)
-    prod2 = a * b * c
+    if t_area > 0:
+        prod = a * b * c
 
-    radius = prod2 * prod2 / (16 * prod)
+        radius = prod / (16 * t_area * t_area)
+    else:
+        radius = np.nan
 
     return radius
 
@@ -140,12 +154,14 @@ def circumcircle_radius(pt0, pt1, pt2):
     b = distance(pt1, pt2)
     c = distance(pt2, pt0)
 
-    s = (a + b + c) * 0.5
+    t_area = triangle_area(pt0, pt1, pt2)
 
-    prod = s * (s - a) * (s - b) * (s - c)
-    prod2 = a * b * c
+    if t_area > 0:
+        prod = a * b * c
 
-    radius = prod2 / (4 * math.sqrt(prod))
+        radius = prod / (4 * t_area)
+    else:
+        radius = np.nan
 
     return radius
 
