@@ -1,39 +1,53 @@
-from libc.math cimport sqrt
-import numpy as np
+# Copyright (c) 2008-2015 MetPy Developers.
+# Distributed under the terms of the BSD 3-Clause License.
+# SPDX-License-Identifier: BSD-3-Clause
 
+from libc.math cimport sqrt, fabs
+import cython
 
-def _circumcenter(pt1, pt2, pt3):
+def _area(pt1, pt2, pt3):
+
+    cdef:
+        double x0
+        double y0
+        double x1
+        double y1
+        double x2
+        double y2
 
     x0, y0 = pt1
     x1, y1 = pt2
     x2, y2 = pt3
 
-    return c_circumcenter(x0, y0, x1, y1, x2, y2)
+    return c_area(x0, y0, x1, y1, x2, y2)
+
+cdef double c_area(double x0, double y0, double x1, double y1, double x2, double y2):
+
+    cdef double a
+
+    a = (x0 * y1 - x1 * y0) + (x1 * y2 - x2 * y1) + (x2 * y0 - x0 * y2)
+
+    return fabs(a) * 0.5
 
 
-cdef c_circumcenter(double x0, double y0, double x1, double y1, double x2, double y2):
-
+@cython.cdivision(True)
+def _circumcircle_radius(pt1, pt2, pt3):
     cdef:
-        double bc_y_diff = y1 - y2
-        double ca_y_diff = y2 - y0
-        double ab_y_diff = y0 - y1
-        double d_inv = 0.5 / (x0 * bc_y_diff + x1 * ca_y_diff + x2 * ab_y_diff)
-        double a_mag = x0 * x0 + y0 * y0
-        double b_mag = x1 * x1 + y1 * y1
-        double c_mag = x2 * x2 + y2 * y2
-        double cx
-        double cy
+        double x0
+        double y0
+        double x1
+        double y1
+        double x2
+        double y2
+        double a
 
-    cx = (a_mag * bc_y_diff + b_mag * ca_y_diff + c_mag * ab_y_diff) * d_inv
-    cy = (a_mag * (x2 - x1) + b_mag * (x0 - x2) + c_mag * (x1 - x0)) * d_inv
+    x0, y0 = pt1
+    x1, y1 = pt2
+    x2, y2 = pt3
 
-    return cx, cy
+    a = _area(pt1, pt2, pt3)
 
-
-def _dist_2(double x0, double y0, double x1, double y1):
-
-    return c_dist_2(x0, y0, x1, y1)
-
+    return c_circumcircle_radius(x0, y0, x1, y1, x2, y2, a)
 
 cdef double c_dist_2(double x0, double y0, double x1, double y1):
 
@@ -47,29 +61,28 @@ cdef double c_dist_2(double x0, double y0, double x1, double y1):
     return d0 * d0 + d1 * d1
 
 
-cdef double _distance(double x0, double y0, double x1, double y1):
-
-    return sqrt(c_dist_2(x0, y0, x1, y1))
-
-
-def _circumcircle_radius(pt1, pt2, pt3):
-
-    x0, y0 = pt1
-    x1, y1 = pt2
-    x2, y2 = pt3
-
-    return c_circumcircle_radius(x0, y0, x1, y1, x2, y2)
-
-
-cdef double c_circumcircle_radius(double x0, double y0, double x1, double y1, double x2, double y2):
+cdef double c_circumcircle_radius(double x0, double y0, double x1,
+                                  double y1, double x2, double y2,
+                                  double area):
 
     cdef:
-        double a = _distance(x0, y0, x1, y1)
-        double b = _distance(x1, y1, x2, y2)
-        double c = _distance(x2, y2, x0, y0)
-        double s = (a + b + c) * 0.5
-        double prod = s*(a+b-s)*(a+c-s)*(b+c-s)
-        double prod2 = a*b*c
-        double radius = prod2 * prod2 / (16*prod)
+        double a
+        double b
+        double c
+        double s
+        double prod
+        double radius
+
+    radius = -99.00
+
+    if area > 0:
+
+        a = c_dist_2(x0, y0, x1, y1)
+        b = c_dist_2(x1, y1, x2, y2)
+        c = c_dist_2(x2, y2, x0, y0)
+
+        prod = a * b * c
+
+        radius = sqrt(prod) / (4 * area)
 
     return radius
