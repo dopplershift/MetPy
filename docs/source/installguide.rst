@@ -42,7 +42,7 @@ The source code can also be grabbed from `GitHub <http://github.com/MetPy/metpy>
 the base of the source directory, run:
 
 .. parsed-literal::
-    python setup.py install
+    pip install .
 
 This will build and install MetPy into your current Python installation.
 
@@ -56,4 +56,4 @@ These can also be converted to standalone scripts (provided IPython is installed
 .. parsed-literal::
     python setup.py examples
 
-These examples are also seen within the documentation in the :ref:`examples-index`.
+These examples are also seen within the documentation in the :doc:`examples/index`.
