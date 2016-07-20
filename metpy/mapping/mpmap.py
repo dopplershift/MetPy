@@ -15,9 +15,6 @@ from metpy.plots import StationPlot
 from metpy.calc import get_wind_components
 from metpy.units import units
 
-from siphon.catalog import TDSCatalog
-from siphon.ncss import NCSS
-from datetime import datetime
 
 class MetpyMap(object):
 
@@ -42,7 +39,7 @@ class MetpyMap(object):
         self.optional_params = ["title", "process_area", "map_params", "datetime",
                                 "projection_options"]
 
-        self.required_params = ["data_file", "data_type"]
+        self.required_params = ["data_location", "data_type"]
 
         self.params = dict()
 
@@ -146,7 +143,7 @@ class StationMap(MetpyMap):
 
     def load_text(self):
 
-        f = get_test_data(self.params['data_file'])
+        f = get_test_data(self.params['data_location'])
 
         all_data = np.loadtxt(f, skiprows=1, delimiter=',',
                               usecols=(1, 2, 3, 4, 5, 6, 7, 17, 18, 19),
@@ -228,37 +225,6 @@ class GridMap(MetpyMap):
         MetpyMap.__init__(self, opts)
 
         self.lons, self.lats,  self.field = self.load_data()
-
-    def load_data(self):
-
-        gefs = TDSCatalog("http://thredds.ucar.edu/thredds/catalog/grib/NCEP/GEFS/Global_1p0deg_Ensemble"
-                          "/members/catalog.html?dataset=grib/NCEP/GEFS/Global_1p0deg_Ensemble/members/Best")
-
-        best_ds = list(gefs.datasets.values())[0]
-        ncss = NCSS(best_ds.access_urls['NetcdfSubset'])
-
-        query = ncss.query()
-
-        bbox = self.params['bbox']
-        query.lonlat_box(north=bbox['north'], south=bbox['south'], east=bbox['east'], west=bbox['west']).time(
-            datetime.utcnow())
-        query.accept('netcdf4')
-        query.variables(self.params['variable'])
-
-        data = ncss.get_data(query)
-        print(list(data.variables))
-
-        data = data.variables[self.params['variable']]
-
-        # Time variables can be renamed in GRIB collections. Best to just pull it out of the
-        # coordinates attribute on temperature
-        time_name = temp_var.coordinates.split()[1]
-
-        time_var = data.variables[time_name]
-        lats = data.variables['lat']
-        lons = data.variables['lon']
-
-        return lons, lats, data
 
     def draw_map(self, view):
 
