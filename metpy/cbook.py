@@ -9,7 +9,7 @@ import os.path
 from matplotlib.cbook import iterable, is_string_like, Bunch
 
 
-def get_test_data(fname, as_file_obj=True):
+def get_test_data_path(fname):
     # Look for an environment variable to point to the test data. If not, try looking at
     # the appropriate path relative to this file.
     data_dir = os.environ.get('TEST_DATA_DIR',
@@ -17,6 +17,13 @@ def get_test_data(fname, as_file_obj=True):
 
     # Assemble the path
     path = os.path.join(data_dir, fname)
+
+    return path
+
+
+def get_test_data(fname, as_file_obj=True):
+
+    path = get_test_data_path(fname)
 
     # If we want a file object, open it, trying to guess whether this should be binary mode
     # or not
