@@ -1,5 +1,5 @@
 from traitlets.config.application import Application
-from traitlets import Float, Unicode, Bool, Any, Dict, default, Instance
+from traitlets import Float, Unicode, Bool, Any, Dict, default, observe, All
 
 import cartopy
 import numpy as np
@@ -10,10 +10,14 @@ from metpy.units import units
 from metpy.cbook import get_test_data
 from metpy.plots.wx_symbols import sky_cover, current_weather
 
-from cartopy.mpl.geoaxes import GeoAxes
-
 
 class MetpyMap(Application):
+
+    map_loaded = Bool(default_value=False,
+                      help='has map been created')
+
+    view = Any(default_value=None,
+               help='axes object for map')
 
     map_type = Unicode(default_value='',
                        allow_none=False,
@@ -43,7 +47,9 @@ class MetpyMap(Application):
 
     @default('feature_choices')
     def _feature_choices_default(self):
-        """Set the default values for available basic cartopy features."""
+        """Set the default values for available basic cartopy features.
+           default is seemingly used for cases where it may be ugly to have a large
+           'default_value' line."""
 
         avail_features = {
             'OCEANS': cartopy.feature.OCEAN,
@@ -79,20 +85,48 @@ class MetpyMap(Application):
 
         return dict(east=-70, west=-120, north=50, south=25)
 
-    def draw_map(self, view):
+    @observe('features', 'bbox', 'data', type=All)
+    def redraw(self, change):
+        """The type parameter of the observe decorator is a little mysterious.
+           The All type, imported from traitlets, captures all events for the
+           properties that are being observed.  However, changing individual
+           dict values will not trigger this event.  You need to change the
+           entire dict to trigger the event.
+
+           One option here is shown in the notebook. Copy the existing dict,
+           update a key/item pair, and then set the copy equal to the class
+           dict. Unclear what implications this has for the structure of this
+           class.  Possibly, one would want to pull out often used variables
+           from dicts, lists, etc., to reduce the amount of data one copies.
+
+           Also, there are presumably more 'types' of events that one can
+           observe, but the documentation as of now (Summer 2016) is lacking
+           on what those keywords are and what they mean.  By default, this
+           value is 'change', which has unknown meaning at this point. Hence,
+           The option to use All"""
+
+        print("The following property changed:", change['name'])
+        if self.map_loaded:
+
+            self.view.clear()
+            self.draw_map()
+
+    def draw_map(self):
         """Most basic map we can make.  With required parameters, draw active features
            within the given bounding box."""
 
-        view.set_extent([self.bbox['west'], self.bbox['east'],
-                         self.bbox['south'], self.bbox['north']])
+        self.view.set_extent([self.bbox['west'], self.bbox['east'],
+                              self.bbox['south'], self.bbox['north']])
 
         for key, activated in self.features.items():
             if activated:
-                view.add_feature(self.feature_choices[key])
+                self.view.add_feature(self.feature_choices[key])
 
         if self.map_type == 'station':
 
-            self.draw_station_plots(view)
+            self.draw_station_plots()
+
+        self.map_loaded = True
 
     def load_text(self):
         """Placeholder function to demonstrate traitlets class"""
@@ -118,7 +152,7 @@ class MetpyMap(Application):
         # Loop over all the whitelisted sites, grab the first data, and concatenate them
         self.data = np.concatenate([all_data[all_stids.index(site)].reshape(1, ) for site in whitelist])
 
-    def draw_station_plots(self, view):
+    def draw_station_plots(self):
         """Another semi-placeholder.  We could get much smarter on what stationplot attributes
            to try to display."""
 
@@ -141,19 +175,19 @@ class MetpyMap(Application):
         u, v = get_wind_components((self.data['wind_speed'] * units('m/s')).to('knots'),
                                    self.data['wind_dir'] * units.degree)
 
-        stationplot = StationPlot(view, x, y, transform=from_proj,
+        stationplot = StationPlot(self.view, x, y, transform=from_proj,
                                   fontsize=12)
 
-        stationplot.plot_parameter('NW', self.data['air_temperature'], color='red')
-        stationplot.plot_parameter('SW', self.data['dewpoint'], color='darkgreen')
+        temp = stationplot.plot_parameter('NW', self.data['air_temperature'], color='red')
+        temp = stationplot.plot_parameter('SW', self.data['dewpoint'], color='darkgreen')
 
-        stationplot.plot_parameter('NE', self.data['slp'],
+        temp = stationplot.plot_parameter('NE', self.data['slp'],
                                    formatter=lambda sp: format(10 * sp, '.0f')[-3:])
 
-        stationplot.plot_symbol('C', cloud_frac, sky_cover)
+        temp = stationplot.plot_symbol('C', cloud_frac, sky_cover)
 
-        stationplot.plot_symbol('W', wx, current_weather)
+        temp = stationplot.plot_symbol('W', wx, current_weather)
 
-        stationplot.plot_barb(u, v)
+        temp = stationplot.plot_barb(u, v)
 
-        stationplot.plot_text((2, 0), stid)
+        temp = stationplot.plot_text((2, 0), stid)
