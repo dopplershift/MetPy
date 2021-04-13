@@ -6,5 +6,5 @@ ARG NODE_VERSION="lts/*"
 RUN if [ "${INSTALL_NODE}" = "true" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
 
 COPY ci/*.txt /tmp/conda-tmp/
-RUN /opt/conda/bin/conda install --quiet --yes --file /tmp/conda-tmp/ci/test_requirements.txt --file /tmp/conda-tmp/ci/extra_requirements.txt --file /tmp/conda-tmp/ci/requirements.txt --file /tmp/conda-tmp/ci/linting_requirements.txt --file /tmp/conda-tmp/ci/doc_requirements.txt
+RUN /opt/conda/bin/conda install --quiet --yes --file /tmp/conda-tmp/test_requirements.txt --file /tmp/conda-tmp/extra_requirements.txt --file /tmp/conda-tmp/requirements.txt --file /tmp/conda-tmp/linting_requirements.txt --file /tmp/conda-tmp/doc_requirements.txt
 
