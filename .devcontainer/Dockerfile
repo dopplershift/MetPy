@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/vscode/devcontainers/python:3.8
 
 COPY ci/*.txt /tmp/conda-tmp/
-RUN apt-get update && apt-get install libgeos-dev libproj-dev proj-bin
+RUN apt-get update && apt-get install -y libgeos-dev libproj-dev proj-bin
 RUN python -m pip install --upgrade pip setuptools
 RUN python -m pip install --no-binary :all: shapely
 RUN python -m pip install -c /tmp/conda-tmp/requirements.txt numpy
