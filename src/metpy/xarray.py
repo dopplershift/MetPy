@@ -1176,10 +1176,16 @@ def preprocess_and_wrap(broadcast=None, wrap_like=None, match_unit=False, to_mag
 
             # Auto-broadcast select xarray arguments, and update bound_args
             if broadcast is not None:
+                for arg_name in broadcast:
+                    if arg_name not in bound_args.arguments:
+                        raise ValueError(
+                            f"Cannot broadcast argument {arg_name} as it is not in function "
+                            "signature"
+                        )
+
                 arg_names_to_broadcast = tuple(
                     arg_name for arg_name in broadcast
-                    if arg_name in bound_args.arguments
-                    and isinstance(
+                    if isinstance(
                         bound_args.arguments[arg_name],
                         (xr.DataArray, xr.Variable)
                     )

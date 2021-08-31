@@ -3069,7 +3069,7 @@ def static_stability(pressure, temperature, vertical_dim=0):
 @solver.register('dewpoint')
 @preprocess_and_wrap(
     wrap_like='temperature',
-    broadcast=('pressure', 'temperature', 'specific_humdiity')
+    broadcast=('pressure', 'temperature', 'specific_humidity')
 )
 @check_units('[pressure]', '[temperature]', '[dimensionless]')
 def dewpoint_from_specific_humidity(pressure, temperature, specific_humidity):
